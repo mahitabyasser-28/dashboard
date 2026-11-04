@@ -1,0 +1,45 @@
+# Ready-to-use version for a Colab notebook.
+# Only change the two file names marked "CHECK" if yours are different.
+
+name: Daily dashboard
+
+on:
+  schedule:
+    - cron: "0 5 * * *"     # every day at 05:00 UTC (about 7-8 AM Cairo time)
+  workflow_dispatch:         # adds a "Run workflow" button
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the packages the notebook needs
+        run: pip install -r requirements.txt
+
+      - name: Run the notebook
+        run: jupyter nbconvert --to notebook --execute dashboard.ipynb --output executed.ipynb   # CHECK: notebook name
+
+      - name: Prepare the web page
+        run: |
+          mkdir site
+          cp dashboard.html site/index.html   # CHECK: name of the HTML file the notebook creates
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
